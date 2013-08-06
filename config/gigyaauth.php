@@ -19,12 +19,16 @@
  * This will allow you to upgrade fuel without losing your custom config.
  */
 
-return array(	
+return array(
 	/**
-	 * This will only use the Gigya framework for login (no other login providers)
+	 * Fields from the Gigya accountInfo to map to ORM user->metadata equivalent.
+	 * metadata key => Gigya key (Will be ignored if empty)
 	 *
 	 */
-	'gigya_only' => false,
+	'metadata' => array(
+		'first_name' => 'firstName',
+		'last_name' => 'lastName'
+	),
 	
 	/**
 	 * Time in seconds that Gigya should keep the login session valid for the user.

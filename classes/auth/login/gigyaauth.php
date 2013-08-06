@@ -72,9 +72,6 @@ class Auth_Login_Gigyaauth extends \Auth_Login_Driver
 			return false;
 		}
 
-		// hash the password
-		$password = $this->hash_password($password);
-
 		// and do a lookup of this user
 		$gigya_account = new \Gigya\Model\GigyaAccount();
 		$gigya_account->login($username_or_email, $password);
@@ -108,6 +105,9 @@ class Auth_Login_Gigyaauth extends \Auth_Login_Driver
 		// store the logged-in user and it's hash in the session
 		\Session::set('username', $this->user->username);
 		\Session::set('login_hash', $this->create_login_hash());
+		
+		// set Gigya cookie
+		// Cookie::set($name, $value, 60 * 60 * 24);
 
 		// and rotate the session id, we've elevated rights
 		\Session::instance()->rotate();
@@ -123,9 +123,6 @@ class Auth_Login_Gigyaauth extends \Auth_Login_Driver
 	 */
 	public function force_login($user_id = '')
 	{
-		\Log::Error(print_r($user_id, true));
-		exit;
-	
 		// bail out if we don't have a user
 		if (empty($user_id))
 		{
@@ -133,13 +130,11 @@ class Auth_Login_Gigyaauth extends \Auth_Login_Driver
 		}
 
 		// get the user we need to login
-		if ( ! $user_id instanceOf \Model\Auth_User)
+		if ( ! $user_id instanceOf \Model\Auth_GigyaUser)
 		{
-			$this->user = \Model\Auth_User::query()
-				->select(\Config::get('ormauth.table_columns', array()))
-				->related('metadata')
-				->where('id', '=', $user_id)
-				->get_one();
+			$gigya_account = new \Gigya\Model\GigyaAccount();
+			$gigya_account->getAccountInfo($user_id);
+			$this->user = new \Model\Auth_GigyaUser($gigya_account);
 		}
 		else
 		{
@@ -173,6 +168,12 @@ class Auth_Login_Gigyaauth extends \Auth_Login_Driver
 	 */
 	public function logout()
 	{
+		// Send logout notification to Gigya
+		if(!empty($this->user->id)) {
+			$gigya_account = new \Gigya\Model\GigyaAccount();
+			$gigya_account->logout($this->user->id);
+		}
+	
 		// reset the current user
 		if (\Config::get('gigyaauth.guest_login', true))
 		{
@@ -537,7 +538,7 @@ class Auth_Login_Gigyaauth extends \Auth_Login_Driver
 		$this->user->login_hash = sha1(\Config::get('gigyaauth.login_hash_salt').$this->user->username.$this->user->last_login);
 
 		// store it
-		//$this->user->save();
+		$this->user->save();
 
 		// and return it
 		return $this->user->login_hash;
@@ -566,7 +567,7 @@ class Auth_Login_Gigyaauth extends \Auth_Login_Driver
 			return false;
 		}
 
-		return array($this->id, (int) $this->user->id);
+		return array($this->id, $this->user->id);
 	}
 
 	/**
@@ -663,7 +664,7 @@ class Auth_Login_Gigyaauth extends \Auth_Login_Driver
 	 */
 	public function guest_login()
 	{
-		return \Config::get('ormauth.guest_login', true);
+		return \Config::get('gigyaauth.guest_login', true);
 	}
 
 	/**
@@ -676,9 +677,6 @@ class Auth_Login_Gigyaauth extends \Auth_Login_Driver
 		// get the username and login hash from the session
 		$username    = \Session::get('username');
 		$login_hash  = \Session::get('login_hash');
-		
-		\Log::Error(print_r($username, true));
-		\Log::Error(print_r($login_hash, true));
 
 		// only worth checking if there's both a username and login-hash
 		if ( ! empty($username) and ! empty($login_hash))
@@ -705,11 +703,11 @@ class Auth_Login_Gigyaauth extends \Auth_Login_Driver
 		{
 			return $this->force_login($user_id);
 		}
-//var_dump(static::$remember_me);die();
+		//var_dump(static::$remember_me);die();
 		// force a logout
 		//$this->logout();
 		
-		\Log::Error(print_r('Not logged in', true));
+		// \Log::Error(print_r('Not logged in', true));
 
 		return false;
 	}

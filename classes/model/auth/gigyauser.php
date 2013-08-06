@@ -17,6 +17,9 @@ namespace Auth\Model;
 
 class Auth_GigyaUser extends \Model implements \ArrayAccess
 {
+	protected $_is_new = true;
+	
+	private $_account;
 	private $_data;
 	private $_debug;
 
@@ -31,12 +34,16 @@ class Auth_GigyaUser extends \Model implements \ArrayAccess
     public $previous_login;
     public $created_at;
     public $updated_at;
+    
+    public $avatars;
+    public $metadata;
 
    	public function __construct(\Gigya\Model\GigyaAccount $gigya_account, $debug = false)
 	{
 
 		if(!$gigya_account->hasErrors()) 
 		{
+			// Set core model data
 			$this->id = $gigya_account->UID;
 			$this->user_id = $gigya_account->UID;
 			$this->group_id = $gigya_account->data->group_id;
@@ -56,6 +63,39 @@ class Auth_GigyaUser extends \Model implements \ArrayAccess
 			}
 			$this->created_at = $gigya_account->createdTimestamp;
 			$this->updated_at = $gigya_account->lastUpdatedTimestamp;
+			
+			// Set user avatars
+			$this->avatars = array();
+			
+			foreach($gigya_account->identities as $identity) {
+				if(!empty($identity->photoURL)) {
+					$this->avatars[] = $identity->photoURL;
+				}
+			}
+			
+			// Set model "metadata", according to config mapping
+			$this->metadata = array();
+			
+			foreach(\Config::get('gigyaauth.metadata') as $metadata_key => $gigya_key) {
+				if(!empty($gigya_account->profile->{$gigya_key})) {
+					$metadata_object = new \stdClass;
+					$metadata_object->key = $metadata_key;
+					$metadata_object->value = $gigya_account->profile->{$gigya_key};
+					$this->metadata[] = $metadata_object;
+				}
+			}
+			
+			// Load metadata into the model
+			// TO TO: See how to do this better, a la ORM EAV
+			foreach($this->metadata as $metadata) {
+				$this->{$metadata->key} = $metadata->value;
+			}
+			
+			// Keep Gigya Account objct handy
+			$this->_account = $gigya_account;
+			
+			// Set this to not be a new object (to follow ORM pattern)
+			$this->_is_new = false;
 		}
 		
 		return !empty($this->id) ? $this : null;
@@ -71,6 +111,39 @@ class Auth_GigyaUser extends \Model implements \ArrayAccess
 
 		// model language file
 		// \Lang::load('auth_model_user', true);
+	}
+	
+	/**
+	 * Return whether this is a new object
+	 */
+	public function is_new()
+	{
+		return $this->_is_new;
+	}
+	
+	/**
+	 * Get account data from Gigya
+	 */
+	public function find()
+	{
+	
+	}
+	
+	/**
+	 * Save the data back to Gigya
+	 */
+	public function save()
+	{
+		// TO DO: Update this so it's "smart" about organizing $profile, $data, etc.
+		$this->_account->setAccountInfo(
+			$this->id,
+			null,
+			array(),
+			array(
+				'group_id' => $this->group_id,
+				'login_hash' => $this->login_hash
+			)
+		);
 	}
 	
 	/**
