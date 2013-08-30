@@ -47,10 +47,18 @@ class Auth_GigyaUser extends \Model implements \ArrayAccess
 			$this->id = $gigya_account->UID;
 			$this->user_id = $gigya_account->UID;
 			$this->group_id = $gigya_account->data->group_id;
-			$this->username = $gigya_account->loginIDs->username;
+			if (!empty($gigya_account->loginIDs->username)) {
+				$this->username = $gigya_account->loginIDs->username;
+			} else {
+				$this->username = "";
+			}
 			$this->email = $gigya_account->profile->email; // TO DO: user loginIDs->emails
 			$this->password = null;
-			$this->login_hash = $gigya_account->data->login_hash;
+			if (!empty($gigya_account->data->login_hash)) {
+				$this->login_hash = $gigya_account->data->login_hash;
+			} else {
+				$this->login_hash = null;
+			}
 			if(!empty($gigya_account->lastLoginTimestamp)) {
 				$this->last_login = $gigya_account->lastLoginTimestamp;
 			} else {
