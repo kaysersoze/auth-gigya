@@ -686,7 +686,7 @@ class Auth_Login_Gigyaauth extends \Auth_Login_Driver
 			{
 				// find the user
 				$gigya_account = new \Gigya\Model\GigyaAccount();
-				$user_query = 'select * from accounts where username="' . $username . '" limit 1';
+				$user_query = 'select * from accounts where username="' . $username . '" or email="'.$username.'" limit 1';
 				$search_results = $gigya_account->search($user_query);
 				$this->user = new \Model\Auth_GigyaUser($search_results[0]);
 			}

@@ -50,7 +50,7 @@ class Auth_GigyaUser extends \Model implements \ArrayAccess
 			if (!empty($gigya_account->loginIDs->username)) {
 				$this->username = $gigya_account->loginIDs->username;
 			} else {
-				$this->username = "";
+				$this->username = $gigya_account->profile->email;
 			}
 			$this->email = $gigya_account->profile->email; // TO DO: user loginIDs->emails
 			$this->password = null;
