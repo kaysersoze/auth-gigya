@@ -59,6 +59,11 @@ class Auth_GigyaUser extends \Model implements \ArrayAccess
 			} else {
 				$this->login_hash = null;
 			}
+			if(!empty($gigya_account->loginProvider)) {
+				$this->loginProvider = $gigya_account->loginProvider;
+			} else {
+				$this->loginProvider = null;
+			}
 			if(!empty($gigya_account->lastLoginTimestamp)) {
 				$this->last_login = $gigya_account->lastLoginTimestamp;
 			} else {

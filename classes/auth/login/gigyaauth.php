@@ -104,6 +104,7 @@ class Auth_Login_Gigyaauth extends \Auth_Login_Driver
 
 		// store the logged-in user and it's hash in the session
 		\Session::set('username', $this->user->username);
+		\Session::set('loginProvider', $this->user->loginProvider);
 		\Session::set('login_hash', $this->create_login_hash());
 		
 		// set Gigya cookie
@@ -146,6 +147,7 @@ class Auth_Login_Gigyaauth extends \Auth_Login_Driver
 		{
 			// store the logged-in user and it's hash in the session
 			\Session::set('username', $this->user->username);
+			\Session::set('loginProvider', $this->user->loginProvider);
 			\Session::set('login_hash', $this->create_login_hash());
 
 			// and rotate the session id, we've elevated rights
@@ -186,6 +188,7 @@ class Auth_Login_Gigyaauth extends \Auth_Login_Driver
 
 		// delete the session data identifying this user
 		\Session::delete('username');
+		\Session::delete('loginProvider');
 		\Session::delete('login_hash');
 
 		return true;
@@ -677,6 +680,7 @@ class Auth_Login_Gigyaauth extends \Auth_Login_Driver
 		// get the username and login hash from the session
 		$username    = \Session::get('username');
 		$login_hash  = \Session::get('login_hash');
+		$loginProvider  = \Session::get('loginProvider');
 
 		// only worth checking if there's both a username and login-hash
 		if ( ! empty($username) and ! empty($login_hash))
@@ -686,7 +690,7 @@ class Auth_Login_Gigyaauth extends \Auth_Login_Driver
 			{
 				// find the user
 				$gigya_account = new \Gigya\Model\GigyaAccount();
-				$user_query = 'select * from accounts where username="' . $username . '" or email="'.$username.'" limit 1';
+				$user_query = 'select * from accounts where (username="' . $username . '" or email="'.$username.'") and provider = "'.$loginProvider.'" limit 1';
 				$search_results = $gigya_account->search($user_query);
 				$this->user = new \Model\Auth_GigyaUser($search_results[0]);
 			}
